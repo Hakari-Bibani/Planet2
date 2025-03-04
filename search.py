@@ -6,7 +6,7 @@ def search_page():
     """
     Professional search page for inventory with advanced styling and user experience.
     """
-    # Custom CSS for enhanced professional design
+    # Custom CSS for enhanced professional design and card styling
     st.markdown("""
     <style>
     /* Page Title Styling */
@@ -28,7 +28,6 @@ def search_page():
         color: #495057;
         transition: all 0.3s ease;
     }
-
     .stSelectbox > div > div > div:hover {
         border-color: #007bff;
         box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
@@ -49,32 +48,37 @@ def search_page():
         padding: 10px 20px;
         transition: all 0.3s ease;
     }
-
     .stButton > button:hover {
         background-color: #0056b3 !important;
         transform: translateY(-2px);
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
 
-    /* Dataframe Styling */
-    .dataframe {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
+    /* Card Styling for Results */
+    .result-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
     }
-
-    .dataframe th {
-        background-color: #f8f9fa;
+    .result-card img {
+        width: 120px;
+        height: 120px;
+        border-radius: 8px;
+        object-fit: cover;
+        margin-right: 15px;
+    }
+    .result-header {
+        display: flex;
+        align-items: center;
+    }
+    .result-header h3 {
+        margin: 0;
         color: #2c3e50;
-        font-weight: 600;
-        border: 1px solid #dee2e6;
-        padding: 12px;
-        text-align: left;
     }
-
-    .dataframe td {
-        border: 1px solid #dee2e6;
-        padding: 10px;
+    .result-header p {
+        margin: 0;
         color: #495057;
     }
     </style>
@@ -93,10 +97,8 @@ def search_page():
     
     # Create two columns for dropdown selectors
     col1, col2 = st.columns(2)
-    
     with col1:
         selected_tree = st.selectbox("Select Tree Name", ["All"] + tree_names)
-    
     with col2:
         selected_packaging = st.selectbox("Select Packaging Type", ["All"] + packaging_types)
     
@@ -144,12 +146,29 @@ def search_page():
             """
             results = run_query(query, tuple(params))
             if results:
-                df = pd.DataFrame(results)
-                # Reorder columns to show height data prominently and rename for clarity
-                ordered_cols = ['quantity_in_stock', 'price', 'min_height', 'max_height', 'growth_rate', 'scientific_name', 'shape', 'watering_demand', 'main_photo_url', 'origin', 'soil_type', 'root_type', 'leafl_type', 'address']
-                df = df[ordered_cols]
-                df.rename(columns={'min_height': 'Minimum Height (cm)', 'max_height': 'Maximum Height (cm)'}, inplace=True)
-                st.dataframe(df)
+                for row in results:
+                    st.markdown(f"""
+                    <div class="result-card">
+                        <div class="result-header">
+                            <img src="{row['main_photo_url']}" alt="Tree Photo">
+                            <div>
+                                <h3>{row['scientific_name']}</h3>
+                                <p>Growth Rate: {row['growth_rate']} cm/yr</p>
+                            </div>
+                        </div>
+                        <hr style="border:none; border-top:1px solid #dee2e6; margin:10px 0;">
+                        <p><strong>Quantity in Stock:</strong> {row['quantity_in_stock']}</p>
+                        <p><strong>Price:</strong> {row['price']} IQD</p>
+                        <p><strong>Height Range:</strong> {row['min_height']} cm - {row['max_height']} cm</p>
+                        <p><strong>Shape:</strong> {row['shape']}</p>
+                        <p><strong>Watering Demand:</strong> {row['watering_demand']}</p>
+                        <p><strong>Origin:</strong> {row['origin']}</p>
+                        <p><strong>Soil Type:</strong> {row['soil_type']}</p>
+                        <p><strong>Root Type:</strong> {row['root_type']}</p>
+                        <p><strong>Leaf Type:</strong> {row['leafl_type']}</p>
+                        <p><strong>Address:</strong> {row['address']}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
             else:
                 st.write("No results found.")
         else:
