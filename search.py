@@ -18,6 +18,7 @@ def search_page():
         border-bottom: 2px solid #007bff;
         margin-bottom: 20px;
     }
+
     /* Selectbox Styling */
     .stSelectbox > div > div > div {
         background-color: #f8f9fa;
@@ -27,18 +28,17 @@ def search_page():
         color: #495057;
         transition: all 0.3s ease;
     }
+
     .stSelectbox > div > div > div:hover {
         border-color: #007bff;
         box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
     }
+
     /* Slider Styling */
-    .stSlider > div {
-        background-color: #f8f9fa;
-        border: 1.5px solid #ced4da;
-        border-radius: 6px;
-        padding: 10px;
-        color: #495057;
+    div[data-baseweb="slider"] {
+        margin: 20px 0;
     }
+
     /* Search Button Styling */
     .stButton > button {
         background-color: #007bff !important;
@@ -49,17 +49,20 @@ def search_page():
         padding: 10px 20px;
         transition: all 0.3s ease;
     }
+
     .stButton > button:hover {
         background-color: #0056b3 !important;
         transform: translateY(-2px);
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
+
     /* Dataframe Styling */
     .dataframe {
         width: 100%;
         border-collapse: collapse;
         margin-top: 20px;
     }
+
     .dataframe th {
         background-color: #f8f9fa;
         color: #2c3e50;
@@ -68,6 +71,7 @@ def search_page():
         padding: 12px;
         text-align: left;
     }
+
     .dataframe td {
         border: 1px solid #dee2e6;
         padding: 10px;
@@ -96,24 +100,25 @@ def search_page():
     with col2:
         selected_packaging = st.selectbox("Select Packaging Type", ["All"] + packaging_types)
     
-    # Determine height range based on selected tree name
-    if selected_tree == "All":
-        query_height = "SELECT MIN(min_height) as min_val, MAX(max_height) as max_val FROM Nursery_Tree_Inventory;"
-        height_range = run_query(query_height)
+    # Retrieve height bounds based on selected tree (or overall if "All")
+    if selected_tree != "All":
+        query_bounds = "SELECT MIN(min_height) AS min_val, MAX(max_height) AS max_val FROM Nursery_Tree_Inventory WHERE tree_common_name = %s;"
+        bounds = run_query(query_bounds, (selected_tree,))
     else:
-        query_height = "SELECT MIN(min_height) as min_val, MAX(max_height) as max_val FROM Nursery_Tree_Inventory WHERE tree_common_name = %s;"
-        height_range = run_query(query_height, (selected_tree,))
+        query_bounds = "SELECT MIN(min_height) AS min_val, MAX(max_height) AS max_val FROM Nursery_Tree_Inventory;"
+        bounds = run_query(query_bounds)
     
-    if height_range and height_range[0]["min_val"] is not None and height_range[0]["max_val"] is not None:
-        min_possible = float(height_range[0]["min_val"])
-        max_possible = float(height_range[0]["max_val"])
+    if bounds and bounds[0]['min_val'] is not None and bounds[0]['max_val'] is not None:
+        min_bound = float(bounds[0]['min_val'])
+        max_bound = float(bounds[0]['max_val'])
+        col3, col4 = st.columns(2)
+        with col3:
+            selected_min_height = st.slider("Minimum Height", min_value=min_bound, max_value=max_bound, value=min_bound, step=0.1)
+        with col4:
+            selected_max_height = st.slider("Maximum Height", min_value=min_bound, max_value=max_bound, value=max_bound, step=0.1)
     else:
-        min_possible, max_possible = 0.0, 100.0  # default values if no data available
-
-    # Add sliders for Minimum Height and Maximum Height based on available range
-    st.markdown("<br>", unsafe_allow_html=True)
-    selected_min_height = st.slider("Minimum Height", min_value=min_possible, max_value=max_possible, value=min_possible, step=0.1)
-    selected_max_height = st.slider("Maximum Height", min_value=min_possible, max_value=max_possible, value=max_possible, step=0.1)
+        selected_min_height = None
+        selected_max_height = None
     
     # Search Button with Full Width
     if st.button("Search Inventory", use_container_width=True):
@@ -125,11 +130,11 @@ def search_page():
         if selected_packaging != "All":
             conditions.append("nti.packaging_type = %s")
             params.append(selected_packaging)
-        # Add height conditions
-        conditions.append("nti.min_height >= %s")
-        params.append(selected_min_height)
-        conditions.append("nti.max_height <= %s")
-        params.append(selected_max_height)
+        if selected_min_height is not None and selected_max_height is not None:
+            conditions.append("nti.min_height >= %s")
+            params.append(selected_min_height)
+            conditions.append("nti.max_height <= %s")
+            params.append(selected_max_height)
         
         if conditions:
             where_clause = " AND ".join(conditions)
@@ -146,23 +151,7 @@ def search_page():
             results = run_query(query, tuple(params))
             if results:
                 df = pd.DataFrame(results)
-                # Rename columns for a more professional display
-                df.rename(columns={
-                    "min_height": "Minimum Height",
-                    "max_height": "Maximum Height",
-                    "quantity_in_stock": "Quantity In Stock",
-                    "price": "Price (IQD)",
-                    "growth_rate": "Growth Rate (cm/yr)",
-                    "scientific_name": "Scientific Name",
-                    "shape": "Shape",
-                    "watering_demand": "Watering Demand",
-                    "main_photo_url": "Main Photo URL",
-                    "origin": "Origin",
-                    "soil_type": "Soil Type",
-                    "root_type": "Root Type",
-                    "leafl_type": "Leaf Type",
-                    "address": "Nursery Address"
-                }, inplace=True)
+                st.markdown('<h2 style="text-align: center; color: #2c3e50;">Inventory Results</h2>', unsafe_allow_html=True)
                 st.dataframe(df)
             else:
                 st.write("No results found.")
