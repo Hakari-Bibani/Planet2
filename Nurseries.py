@@ -1,38 +1,46 @@
 import streamlit as st
-import pandas as pd
-import handle
+from handle import run_query, fetch_dataframe
 
-def nurseries_page(pool):
-    st.header("Manage Nurseries")
-    # Add nursery form
-    with st.form("nursery_form", clear_on_submit=True):
-        name = st.text_input("Nursery Name *")
-        address = st.text_area("Address")
+def add_nursery(data):
+    query = """
+    INSERT INTO "Nurseries" 
+    ("Registration_code", "Nursery_name", "Address", "Contact_name", "Contact_phone", "Google_map_link", "Additional_notes")
+    VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """
+    params = (
+        data.get("Registration_code"), data.get("Nursery_name"), data.get("Address"),
+        data.get("Contact_name"), data.get("Contact_phone"), data.get("Google_map_link"),
+        data.get("Additional_notes")
+    )
+    run_query(query, params)
+
+def get_all_nurseries():
+    query = 'SELECT * FROM "Nurseries"'
+    return fetch_dataframe(query)
+
+def nursery_data_entry():
+    st.subheader("Nursery Data Entry (Single)")
+    with st.form("nursery_entry_form"):
+        registration_code = st.text_input("Registration Code")
+        nursery_name = st.text_input("Nursery Name")
+        address = st.text_input("Address")
+        contact_name = st.text_input("Contact Name")
+        contact_phone = st.text_input("Contact Phone")
+        google_map_link = st.text_input("Google Map Link")
+        additional_notes = st.text_area("Additional Notes")
+        
         submitted = st.form_submit_button("Add Nursery")
-    if submitted and name:
-        handle.add_nursery(pool, name=name, address=address)
-        st.success(f"Nursery '{name}' added.")
-    # Bulk upload nurseries
-    st.subheader("Bulk Upload Nurseries")
-    file = st.file_uploader("Upload CSV of nurseries", type=["csv"])
-    if file:
-        df = pd.read_csv(file)
-        for _, row in df.iterrows():
-            handle.add_nursery(pool, **row.to_dict())
-        st.success(f"Uploaded {len(df)} nurseries.")
-    # Edit/delete existing
-    st.subheader("Existing Nurseries")
-    nurseries = handle.get_all_nurseries(pool)
-    names = [""] + [n["name"] for n in nurseries]
-    choice = st.selectbox("Select Nursery to Edit/Delete", names)
-    if choice:
-        nursery = next(n for n in nurseries if n["name"] == choice)
-        new_name = st.text_input("Nursery Name", value=nursery["name"])
-        new_address = st.text_area("Address", value=nursery.get("address",""))
-        if st.button("Update Nursery"):
-            handle.update_nursery(pool, nursery_id=nursery["id"], name=new_name, address=new_address)
-            st.success("Nursery updated.")
-        if st.button("Delete Nursery"):
-            handle.delete_nursery(pool, nursery_id=nursery["id"])
-            st.warning("Nursery deleted.")
-
+        if submitted:
+            data = {
+                "Registration_code": registration_code,
+                "Nursery_name": nursery_name,
+                "Address": address,
+                "Contact_name": contact_name,
+                "Contact_phone": contact_phone,
+                "Google_map_link": google_map_link,
+                "Additional_notes": additional_notes,
+            }
+            add_nursery(data)
+            st.success("Nursery added successfully!")
+    
+    # You can also add a CSV uploader for bulk data here.
