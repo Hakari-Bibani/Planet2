@@ -31,6 +31,7 @@ def handle_nurseries(entry_type):
         file = st.file_uploader("Upload CSV", type=["csv"])
         if file is not None:
             df = pd.read_csv(file)
+            df.columns = df.columns.str.lower()  # ensure headers are lower-case
             for index, row in df.iterrows():
                 query = """
                 INSERT INTO Nurseries (registration_code, nursery_name, address, contact_name, contact_phone, google_map_link, additional_notes)
