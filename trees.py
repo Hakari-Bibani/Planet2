@@ -38,12 +38,25 @@ def handle_trees(entry_type):
         file = st.file_uploader("Upload CSV", type=["csv"])
         if file is not None:
             df = pd.read_csv(file)
+            df.columns = df.columns.str.lower()  # ensure headers are lower-case
             for index, row in df.iterrows():
                 query = """
                 INSERT INTO Trees (common_name, scientific_name, growth_rate, watering_demand, shape, care_instructions, main_photo_url, origin, soil_type, root_type, leafl_type)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
                 """
-                execute_query(query, (row["common_name"], row["scientific_name"], row["growth_rate"], row["watering_demand"], row["shape"], row["care_instructions"], row["main_photo_url"], row["origin"], row["soil_type"], row["root_type"], row["leafl_type"]))
+                execute_query(query, (
+                    row["common_name"],
+                    row["scientific_name"],
+                    row["growth_rate"],
+                    row["watering_demand"],
+                    row["shape"],
+                    row["care_instructions"],
+                    row["main_photo_url"],
+                    row["origin"],
+                    row["soil_type"],
+                    row["root_type"],
+                    row["leafl_type"]
+                ))
             st.success("Bulk trees added!")
     elif entry_type == "Modify/Delete":
         st.subheader("Modify/Delete Trees")
