@@ -2,6 +2,53 @@ import streamlit as st
 import pandas as pd
 from handle import run_query, execute_query, fetch_dropdown
 
+def local_css():
+    st.markdown("""
+    <style>
+    .stApp {
+        background-color: #f0f2f6;
+        font-family: 'Arial', sans-serif;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        display: flex;
+        justify-content: center;
+        background-color: #ffffff;
+        border-radius: 10px;
+        padding: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .stTabs [data-baseweb="tab"] {
+        padding: 10px 20px;
+        margin: 0 5px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        background-color: #e6e9ef;
+    }
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        background-color: #3498db;
+        color: white;
+    }
+    .stTextInput>div>div>input, .stTextArea>div>div>textarea {
+        border-radius: 6px;
+        border: 1px solid #ddd;
+        padding: 10px;
+    }
+    .stButton>button {
+        background-color: #3498db;
+        color: white;
+        border-radius: 6px;
+        border: none;
+        padding: 10px 20px;
+        transition: background-color 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #2980b9;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 def handle_trees(entry_type):
     if entry_type == "Single Entry":
         st.subheader("Add Single Tree")
@@ -66,9 +113,13 @@ def handle_trees(entry_type):
             df = pd.DataFrame(data)
             st.dataframe(df)
             selected_id = st.selectbox("Select Tree ID to Modify/Delete", df["tree_id"])
-            # Use horizontal tabs instead of a radio button for action selection.
-            action_tabs = st.tabs(["Modify", "Delete"])
-            with action_tabs[0]:
+            action = st.radio("Action", ["Modify", "Delete"])
+            if action == "Delete":
+                if st.button("Delete Tree"):
+                    delete_query = "DELETE FROM Trees WHERE tree_id = %s;"
+                    execute_query(delete_query, (selected_id,))
+                    st.success("Tree deleted!")
+            else:
                 row = df[df["tree_id"] == selected_id].iloc[0]
                 common_name = st.text_input("Common Name", value=row["common_name"])
                 scientific_name = st.text_input("Scientific Name", value=row["scientific_name"])
@@ -89,18 +140,14 @@ def handle_trees(entry_type):
                     """
                     execute_query(update_query, (common_name, scientific_name, growth_rate, watering_demand, shape, care_instructions, main_photo_url, origin, soil_type, root_type, leafl_type, selected_id))
                     st.success("Tree updated!")
-            with action_tabs[1]:
-                if st.button("Delete Tree"):
-                    delete_query = "DELETE FROM Trees WHERE tree_id = %s;"
-                    execute_query(delete_query, (selected_id,))
-                    st.success("Tree deleted!")
-        else:
-            st.info("No tree data available.")
 
-# Main function using horizontal tabs to select the entry type.
 def main():
-    st.title("Tree Management")
+    local_css()
+    st.markdown("<h1 style='text-align: center; color: #2c3e50;'>🌳 Tree Management System</h1>", unsafe_allow_html=True)
+    
+    # Create horizontal tabs for the entry types
     tabs = st.tabs(["Single Entry", "Bulk Entry", "Modify/Delete"])
+    
     with tabs[0]:
         handle_trees("Single Entry")
     with tabs[1]:
