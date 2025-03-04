@@ -1,7 +1,6 @@
 import streamlit as st
 
-def show_sidebar():
-    st.sidebar.title("Nursery Inventory App")
-    page = st.sidebar.radio("Go to page:", ["Data Entry", "Search"])
+def render_sidebar():
+    st.sidebar.title("Navigation")
+    page = st.sidebar.radio("Select Page", ["Data Entry", "Search"])
     return page
-
