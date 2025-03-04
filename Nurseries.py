@@ -42,5 +42,3 @@ def nursery_data_entry():
             }
             add_nursery(data)
             st.success("Nursery added successfully!")
-    
-    # You can also add a CSV uploader for bulk data here.
