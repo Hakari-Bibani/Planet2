@@ -91,14 +91,19 @@ def search_page():
     query_tree_names = "SELECT DISTINCT tree_common_name FROM Nursery_Tree_Inventory;"
     tree_names = [row["tree_common_name"] for row in run_query(query_tree_names) or []]
     
-    # Dropdown for Packaging Type from Nursery_Tree_Inventory
-    query_packaging = "SELECT DISTINCT packaging_type FROM Nursery_Tree_Inventory;"
-    packaging_types = [row["packaging_type"] for row in run_query(query_packaging) or []]
-    
     # Create two columns for dropdown selectors
     col1, col2 = st.columns(2)
     with col1:
         selected_tree = st.selectbox("Select Tree Name", ["All"] + tree_names)
+    
+    # Packaging Type dropdown is now dependent on the selected tree name
+    if selected_tree != "All":
+        query_packaging = "SELECT DISTINCT packaging_type FROM Nursery_Tree_Inventory WHERE tree_common_name = %s;"
+        packaging_types = [row["packaging_type"] for row in run_query(query_packaging, (selected_tree,)) or []]
+    else:
+        query_packaging = "SELECT DISTINCT packaging_type FROM Nursery_Tree_Inventory;"
+        packaging_types = [row["packaging_type"] for row in run_query(query_packaging) or []]
+    
     with col2:
         selected_packaging = st.selectbox("Select Packaging Type", ["All"] + packaging_types)
     
