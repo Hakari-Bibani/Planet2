@@ -1,156 +1,210 @@
-import streamlit as st
-import pandas as pd
-from handle import run_query
+import React, { useState, useEffect } from 'react';
 
-def search_page():
-    """
-    Professional search page for inventory with advanced styling and user experience.
-    """
-    # Custom CSS for enhanced professional design
-    st.markdown("""
-    <style>
-    /* Page Title Styling */
-    .page-title {
-        color: #2c3e50;
-        font-weight: 700;
-        text-align: center;
-        padding-bottom: 15px;
-        border-bottom: 2px solid #007bff;
-        margin-bottom: 20px;
-    }
+// Mock data service (replace with actual API/database calls)
+const mockDataService = {
+  getTreeNames: async () => [
+    "Oak", "Maple", "Pine", "Birch", "Elm"
+  ],
+  
+  getPackagingTypes: async () => [
+    "Bare Root", "Container", "Balled and Burlapped"
+  ],
+  
+  getHeightRange: async (treeName) => {
+    // Simulated height range based on tree name
+    const heightRanges = {
+      "Oak": { min: 10, max: 80 },
+      "Maple": { min: 15, max: 70 },
+      "Pine": { min: 20, max: 90 },
+      "Birch": { min: 10, max: 60 },
+      "Elm": { min: 25, max: 75 }
+    };
+    return heightRanges[treeName] || { min: 0, max: 100 };
+  },
+  
+  searchInventory: async (params) => {
+    // Simulated search results
+    return [
+      {
+        quantityInStock: 50,
+        price: 49.99,
+        growthRate: "Moderate",
+        scientificName: "Quercus rubra",
+        shape: "Rounded",
+        wateringDemand: "Moderate",
+        origin: "North America",
+        soilType: "Well-drained",
+        rootType: "Deep",
+        leafType: "Deciduous",
+        address: "123 Nursery Lane"
+      }
+    ];
+  }
+};
 
-    /* Selectbox Styling */
-    .stSelectbox > div > div > div {
-        background-color: #f8f9fa;
-        border: 1.5px solid #ced4da;
-        border-radius: 6px;
-        padding: 10px;
-        color: #495057;
-        transition: all 0.3s ease;
-    }
+export default function TreeInventorySearch() {
+  // State management
+  const [treeNames, setTreeNames] = useState([]);
+  const [packagingTypes, setPackagingTypes] = useState([]);
+  const [selectedTree, setSelectedTree] = useState(null);
+  const [selectedPackaging, setSelectedPackaging] = useState(null);
+  const [heightRange, setHeightRange] = useState({ min: 0, max: 100 });
+  const [selectedHeight, setSelectedHeight] = useState([0, 100]);
+  const [searchResults, setSearchResults] = useState([]);
 
-    /* Slider Styling */
-    .stSlider .thumb {
-        background-color: #007bff !important;
-    }
-    .stSlider .track {
-        background-color: #007bff33 !important;
-    }
+  // Fetch initial data
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      const trees = await mockDataService.getTreeNames();
+      const packages = await mockDataService.getPackagingTypes();
+      setTreeNames(trees);
+      setPackagingTypes(packages);
+    };
+    fetchInitialData();
+  }, []);
 
-    /* Data Table Styling */
-    .styled-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 25px 0;
-        font-size: 0.95em;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
-    }
-    .styled-table thead tr {
-        background-color: #007bff;
-        color: #ffffff;
-        text-align: left;
-    }
-    .styled-table th, 
-    .styled-table td {
-        padding: 12px 15px;
-    }
-    .styled-table tbody tr {
-        border-bottom: 1px solid #dddddd;
-    }
-    .styled-table tbody tr:nth-of-type(even) {
-        background-color: #f8f9fa;
-    }
-    .styled-table tbody tr:last-of-type {
-        border-bottom: 2px solid #007bff;
-    }
-    .height-badge {
-        background-color: #007bff;
-        color: white;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-weight: 500;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+  // Update height range when tree changes
+  useEffect(() => {
+    const fetchHeightRange = async () => {
+      if (selectedTree) {
+        const range = await mockDataService.getHeightRange(selectedTree);
+        setHeightRange(range);
+        setSelectedHeight([range.min, range.max]);
+      }
+    };
+    fetchHeightRange();
+  }, [selectedTree]);
 
-    st.markdown('<h1 class="page-title">🌳 Advanced Tree Inventory Search</h1>', unsafe_allow_html=True)
-    
-    # Get tree names and packaging types
-    tree_names = [row["tree_common_name"] for row in run_query("SELECT DISTINCT tree_common_name FROM Nursery_Tree_Inventory;") or []]
-    packaging_types = [row["packaging_type"] for row in run_query("SELECT DISTINCT packaging_type FROM Nursery_Tree_Inventory;") or []]
+  // Search handler
+  const handleSearch = async () => {
+    const results = await mockDataService.searchInventory({
+      treeName: selectedTree,
+      packagingType: selectedPackaging,
+      minHeight: selectedHeight[0],
+      maxHeight: selectedHeight[1]
+    });
+    setSearchResults(results);
+  };
 
-    # Layout columns
-    col1, col2 = st.columns(2)
-    with col1:
-        selected_tree = st.selectbox("Select Tree Name", ["All"] + tree_names)
-    with col2:
-        selected_packaging = st.selectbox("Select Packaging Type", ["All"] + packaging_types)
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-3xl font-bold text-center mb-6 text-primary">
+        Tree Inventory Search
+      </h1>
 
-    # Get height range based on selection
-    if selected_tree != "All":
-        height_query = f"""
-        SELECT MIN(t.min_height) as min_h, MAX(t.max_height) as max_h 
-        FROM Trees t
-        WHERE t.common_name = '{selected_tree}'
-        """
-    else:
-        height_query = "SELECT MIN(min_height) as min_h, MAX(max_height) as max_h FROM Trees"
-    
-    height_data = run_query(height_query)[0]
-    min_h, max_h = height_data['min_h'] or 0, height_data['max_h'] or 100
+      <div className="bg-white shadow-md rounded-lg mb-6 p-6">
+        <h2 className="text-xl font-semibold mb-4">Search Filters</h2>
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Tree Name Selector */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Tree Name
+            </label>
+            <select 
+              className="w-full p-2 border rounded-md"
+              onChange={(e) => setSelectedTree(e.target.value)}
+              value={selectedTree || ''}
+            >
+              <option value="">Choose a Tree</option>
+              {treeNames.map(name => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-    # Height range slider
-    st.markdown("### 🌱 Height Range Filter")
-    height_range = st.slider(
-        "Select height range (meters)", 
-        min_value=float(min_h), 
-        max_value=float(max_h),
-        value=(float(min_h), float(max_h)),
-        help="Adjust to filter by tree height range"
-    )
+          {/* Packaging Type Selector */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Packaging Type
+            </label>
+            <select 
+              className="w-full p-2 border rounded-md"
+              onChange={(e) => setSelectedPackaging(e.target.value)}
+              value={selectedPackaging || ''}
+            >
+              <option value="">Choose Packaging</option>
+              {packagingTypes.map(type => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-    # Search functionality
-    if st.button("🔍 Search Inventory", use_container_width=True):
-        conditions = []
-        params = []
-        
-        if selected_tree != "All":
-            conditions.append("nti.tree_common_name = %s")
-            params.append(selected_tree)
-        if selected_packaging != "All":
-            conditions.append("nti.packaging_type = %s")
-            params.append(selected_packaging)
-        
-        # Add height conditions
-        conditions.append("t.min_height >= %s AND t.max_height <= %s")
-        params.extend([height_range[0], height_range[1]])
+        {/* Height Range Slider */}
+        {selectedTree && (
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Height Range (feet)
+            </label>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm w-12 text-right">{selectedHeight[0]} ft</span>
+              <input 
+                type="range"
+                min={heightRange.min}
+                max={heightRange.max}
+                value={selectedHeight[0]}
+                onChange={(e) => setSelectedHeight([Number(e.target.value), selectedHeight[1]])}
+                className="flex-grow"
+              />
+              <input 
+                type="range"
+                min={heightRange.min}
+                max={heightRange.max}
+                value={selectedHeight[1]}
+                onChange={(e) => setSelectedHeight([selectedHeight[0], Number(e.target.value)])}
+                className="flex-grow"
+              />
+              <span className="text-sm w-12">{selectedHeight[1]} ft</span>
+            </div>
+          </div>
+        )}
 
-        query = f"""
-        SELECT nti.quantity_in_stock, nti.price, 
-               t.growth_rate, t.scientific_name, t.shape, t.watering_demand,
-               t.main_photo_url, t.origin, t.soil_type, t.root_type, t.leafl_type,
-               n.address, t.min_height, t.max_height
-        FROM Nursery_Tree_Inventory nti
-        JOIN Trees t ON nti.tree_common_name = t.common_name
-        JOIN Nurseries n ON nti.nursery_name = n.nursery_name
-        WHERE {' AND '.join(conditions)}
-        """
-        
-        results = run_query(query, tuple(params))
-        if results:
-            df = pd.DataFrame(results)
-            # Format height columns
-            df['Minimum Height'] = df['min_height'].apply(lambda x: f'<span class="height-badge">{x}m</span>')
-            df['Maximum Height'] = df['max_height'].apply(lambda x: f'<span class="height-badge">{x}m</span>')
-            df.drop(['min_height', 'max_height'], axis=1, inplace=True)
-            
-            # Display styled table
-            st.markdown(df.to_html(escape=False, classes='styled-table', index=False), unsafe_allow_html=True)
-        else:
-            st.warning("No matching results found. Showing all available entries:")
-            fallback_query = "SELECT * FROM Nursery_Tree_Inventory LIMIT 10"
-            fallback_results = run_query(fallback_query)
-            if fallback_results:
-                st.dataframe(pd.DataFrame(fallback_results))
+        {/* Search Button */}
+        <button 
+          onClick={handleSearch} 
+          className="w-full mt-4 p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          disabled={!selectedTree}
+        >
+          Search Inventory
+        </button>
+      </div>
 
-# Note: Ensure your database schema includes min_height and max_height columns in the Trees table
+      {/* Search Results */}
+      {searchResults.length > 0 && (
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Search Results</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border p-2 text-left">Quantity</th>
+                  <th className="border p-2 text-left">Price</th>
+                  <th className="border p-2 text-left">Growth Rate</th>
+                  <th className="border p-2 text-left">Scientific Name</th>
+                  <th className="border p-2 text-left">Origin</th>
+                  <th className="border p-2 text-left">Soil Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {searchResults.map((result, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="border p-2">{result.quantityInStock}</td>
+                    <td className="border p-2">${result.price.toFixed(2)}</td>
+                    <td className="border p-2">{result.growthRate}</td>
+                    <td className="border p-2">{result.scientificName}</td>
+                    <td className="border p-2">{result.origin}</td>
+                    <td className="border p-2">{result.soilType}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
