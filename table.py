@@ -26,10 +26,17 @@ def handle_nurseries(entry_type):
         if st.button("Add Nursery"):
             query = """
             INSERT INTO Nurseries (Registration_code, Nursery_name, Address, Contact_name, Contact_phone, Google_map_link, Additional_notes)
-            VALUES (%s, %s, %s, %s, %s, %s, %s);
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (Nursery_name) DO UPDATE SET
+                Registration_code = EXCLUDED.Registration_code,
+                Address = EXCLUDED.Address,
+                Contact_name = EXCLUDED.Contact_name,
+                Contact_phone = EXCLUDED.Contact_phone,
+                Google_map_link = EXCLUDED.Google_map_link,
+                Additional_notes = EXCLUDED.Additional_notes;
             """
             execute_query(query, (Registration_code, Nursery_name, Address, Contact_name, Contact_phone, Google_map_link, Additional_notes))
-            st.success("Nursery added successfully!")
+            st.success("Nursery added or updated successfully!")
     elif entry_type == "Bulk Entry":
         st.subheader("Bulk Add Nurseries")
         file = st.file_uploader("Upload CSV", type=["csv"])
@@ -38,10 +45,25 @@ def handle_nurseries(entry_type):
             for index, row in df.iterrows():
                 query = """
                 INSERT INTO Nurseries (Registration_code, Nursery_name, Address, Contact_name, Contact_phone, Google_map_link, Additional_notes)
-                VALUES (%s, %s, %s, %s, %s, %s, %s);
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (Nursery_name) DO UPDATE SET
+                    Registration_code = EXCLUDED.Registration_code,
+                    Address = EXCLUDED.Address,
+                    Contact_name = EXCLUDED.Contact_name,
+                    Contact_phone = EXCLUDED.Contact_phone,
+                    Google_map_link = EXCLUDED.Google_map_link,
+                    Additional_notes = EXCLUDED.Additional_notes;
                 """
-                execute_query(query, (row["Registration_code"], row["Nursery_name"], row["Address"], row["Contact_name"], row["Contact_phone"], row["Google_map_link"], row.get("Additional_notes", "")))
-            st.success("Bulk nurseries added!")
+                execute_query(query, (
+                    row["Registration_code"],
+                    row["Nursery_name"],
+                    row["Address"],
+                    row["Contact_name"],
+                    row["Contact_phone"],
+                    row["Google_map_link"],
+                    row.get("Additional_notes", "")
+                ))
+            st.success("Bulk nurseries added or updated!")
     elif entry_type == "Modify/Delete":
         st.subheader("Modify/Delete Nurseries")
         query = "SELECT * FROM Nurseries;"
