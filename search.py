@@ -19,9 +19,8 @@ def search_page():
         margin-bottom: 20px;
     }
 
-    /* Selectbox and Slider Styling */
-    .stSelectbox > div > div > div,
-    .stSlider > div > div > div {
+    /* Selectbox Styling */
+    .stSelectbox > div > div > div {
         background-color: #f8f9fa;
         border: 1.5px solid #ced4da;
         border-radius: 6px;
@@ -30,181 +29,128 @@ def search_page():
         transition: all 0.3s ease;
     }
 
-    .stSelectbox > div > div > div:hover,
-    .stSlider > div > div > div:hover {
-        border-color: #007bff;
-        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
-    }
-
-    /* Search Button Styling */
-    .stButton > button {
+    /* Slider Styling */
+    .stSlider .thumb {
         background-color: #007bff !important;
-        color: white !important;
-        border-radius: 6px;
-        font-weight: 600;
-        text-transform: uppercase;
-        padding: 10px 20px;
-        transition: all 0.3s ease;
+    }
+    .stSlider .track {
+        background-color: #007bff33 !important;
     }
 
-    .stButton > button:hover {
-        background-color: #0056b3 !important;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-
-    /* Results Table Styling */
-    .dataframe {
+    /* Data Table Styling */
+    .styled-table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 20px;
-        background-color: white;
+        margin: 25px 0;
+        font-size: 0.95em;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
     }
-
-    .dataframe th {
-        background-color: #f8f9fa;
-        color: #2c3e50;
-        font-weight: 600;
-        border: 1px solid #dee2e6;
-        padding: 12px;
+    .styled-table thead tr {
+        background-color: #007bff;
+        color: #ffffff;
         text-align: left;
     }
-
-    .dataframe td {
-        border: 1px solid #dee2e6;
-        padding: 10px;
-        color: #495057;
+    .styled-table th, 
+    .styled-table td {
+        padding: 12px 15px;
     }
-
-    /* Height Range Card Styling */
-    .height-range-card {
+    .styled-table tbody tr {
+        border-bottom: 1px solid #dddddd;
+    }
+    .styled-table tbody tr:nth-of-type(even) {
         background-color: #f8f9fa;
-        border-radius: 8px;
-        padding: 15px;
-        margin: 10px 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-
-    .height-range-title {
-        color: #2c3e50;
-        font-size: 1.1em;
-        font-weight: 600;
-        margin-bottom: 10px;
+    .styled-table tbody tr:last-of-type {
+        border-bottom: 2px solid #007bff;
+    }
+    .height-badge {
+        background-color: #007bff;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: 500;
     }
     </style>
     """, unsafe_allow_html=True)
 
-    # Professional title with custom styling
-    st.markdown('<h1 class="page-title">Search Inventory</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="page-title">🌳 Advanced Tree Inventory Search</h1>', unsafe_allow_html=True)
     
-    # Dropdown for Tree Name from Nursery_Tree_Inventory
-    query_tree_names = "SELECT DISTINCT tree_common_name FROM Nursery_Tree_Inventory;"
-    tree_names = [row["tree_common_name"] for row in run_query(query_tree_names) or []]
-    
-    # Dropdown for Packaging Type from Nursery_Tree_Inventory
-    query_packaging = "SELECT DISTINCT packaging_type FROM Nursery_Tree_Inventory;"
-    packaging_types = [row["packaging_type"] for row in run_query(query_packaging) or []]
-    
-    # Create two columns for dropdown selectors
+    # Get tree names and packaging types
+    tree_names = [row["tree_common_name"] for row in run_query("SELECT DISTINCT tree_common_name FROM Nursery_Tree_Inventory;") or []]
+    packaging_types = [row["packaging_type"] for row in run_query("SELECT DISTINCT packaging_type FROM Nursery_Tree_Inventory;") or []]
+
+    # Layout columns
     col1, col2 = st.columns(2)
-    
     with col1:
         selected_tree = st.selectbox("Select Tree Name", ["All"] + tree_names)
-    
     with col2:
         selected_packaging = st.selectbox("Select Packaging Type", ["All"] + packaging_types)
 
-    # Height Range Selector
+    # Get height range based on selection
     if selected_tree != "All":
-        # Get height range for selected tree
-        height_query = """
-        SELECT 
-            MIN(t.height) as min_height,
-            MAX(t.height) as max_height
-        FROM Nursery_Tree_Inventory nti
-        JOIN Trees t ON nti.tree_common_name = t.common_name
-        WHERE nti.tree_common_name = %s;
+        height_query = f"""
+        SELECT MIN(t.min_height) as min_h, MAX(t.max_height) as max_h 
+        FROM Trees t
+        WHERE t.common_name = '{selected_tree}'
         """
-        height_data = run_query(height_query, (selected_tree,))
-        
-        if height_data and height_data[0]['min_height'] is not None:
-            min_height = float(height_data[0]['min_height'])
-            max_height = float(height_data[0]['max_height'])
-            
-            st.markdown('<div class="height-range-card">', unsafe_allow_html=True)
-            st.markdown('<div class="height-range-title">Height Range (meters)</div>', unsafe_allow_html=True)
-            
-            height_range = st.slider(
-                "Select Height Range",
-                min_value=min_height,
-                max_value=max_height,
-                value=(min_height, max_height),
-                step=0.1,
-                key="height_range"
-            )
-            st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        height_query = "SELECT MIN(min_height) as min_h, MAX(max_height) as max_h FROM Trees"
     
-    # Search Button with Full Width
-    if st.button("Search Inventory", use_container_width=True):
+    height_data = run_query(height_query)[0]
+    min_h, max_h = height_data['min_h'] or 0, height_data['max_h'] or 100
+
+    # Height range slider
+    st.markdown("### 🌱 Height Range Filter")
+    height_range = st.slider(
+        "Select height range (meters)", 
+        min_value=float(min_h), 
+        max_value=float(max_h),
+        value=(float(min_h), float(max_h)),
+        help="Adjust to filter by tree height range"
+    )
+
+    # Search functionality
+    if st.button("🔍 Search Inventory", use_container_width=True):
         conditions = []
         params = []
+        
         if selected_tree != "All":
             conditions.append("nti.tree_common_name = %s")
             params.append(selected_tree)
-            if 'height_range' in st.session_state:
-                conditions.append("t.height BETWEEN %s AND %s")
-                params.extend(st.session_state.height_range)
         if selected_packaging != "All":
             conditions.append("nti.packaging_type = %s")
             params.append(selected_packaging)
         
-        if conditions:
-            where_clause = " AND ".join(conditions)
-            query = f"""
-            SELECT 
-                nti.tree_common_name as "Tree Name",
-                t.height as "Height (m)",
-                nti.quantity_in_stock as "Stock",
-                nti.price as "Price",
-                t.growth_rate as "Growth Rate",
-                t.scientific_name as "Scientific Name",
-                t.shape as "Shape",
-                t.watering_demand as "Water Demand",
-                t.origin as "Origin",
-                t.soil_type as "Soil Type",
-                t.root_type as "Root Type",
-                t.leafl_type as "Leaf Type",
-                n.address as "Nursery Address"
-            FROM Nursery_Tree_Inventory nti
-            JOIN Trees t ON nti.tree_common_name = t.common_name
-            JOIN Nurseries n ON nti.nursery_name = n.nursery_name
-            WHERE {where_clause}
-            ORDER BY t.height;
-            """
-            results = run_query(query, tuple(params))
-            if results:
-                df = pd.DataFrame(results)
-                
-                # Format height values
-                if 'Height (m)' in df.columns:
-                    df['Height (m)'] = df['Height (m)'].apply(lambda x: f"{float(x):.1f}")
-                
-                # Display results in a clean table format
-                st.markdown("### Search Results")
-                st.dataframe(
-                    df,
-                    use_container_width=True,
-                    hide_index=True
-                )
-                
-                # Display height statistics
-                if 'Height (m)' in df.columns:
-                    stats_col1, stats_col2 = st.columns(2)
-                    with stats_col1:
-                        st.info(f"Minimum Height: {df['Height (m)'].min()} m")
-                    with stats_col2:
-                        st.info(f"Maximum Height: {df['Height (m)'].max()} m")
-            else:
-                st.warning("No results found.")
+        # Add height conditions
+        conditions.append("t.min_height >= %s AND t.max_height <= %s")
+        params.extend([height_range[0], height_range[1]])
+
+        query = f"""
+        SELECT nti.quantity_in_stock, nti.price, 
+               t.growth_rate, t.scientific_name, t.shape, t.watering_demand,
+               t.main_photo_url, t.origin, t.soil_type, t.root_type, t.leafl_type,
+               n.address, t.min_height, t.max_height
+        FROM Nursery_Tree_Inventory nti
+        JOIN Trees t ON nti.tree_common_name = t.common_name
+        JOIN Nurseries n ON nti.nursery_name = n.nursery_name
+        WHERE {' AND '.join(conditions)}
+        """
+        
+        results = run_query(query, tuple(params))
+        if results:
+            df = pd.DataFrame(results)
+            # Format height columns
+            df['Minimum Height'] = df['min_height'].apply(lambda x: f'<span class="height-badge">{x}m</span>')
+            df['Maximum Height'] = df['max_height'].apply(lambda x: f'<span class="height-badge">{x}m</span>')
+            df.drop(['min_height', 'max_height'], axis=1, inplace=True)
+            
+            # Display styled table
+            st.markdown(df.to_html(escape=False, classes='styled-table', index=False), unsafe_allow_html=True)
         else:
-            st.info("Please select at least one filter.")
+            st.warning("No matching results found. Showing all available entries:")
+            fallback_query = "SELECT * FROM Nursery_Tree_Inventory LIMIT 10"
+            fallback_results = run_query(fallback_query)
+            if fallback_results:
+                st.dataframe(pd.DataFrame(fallback_results))
+
+# Note: Ensure your database schema includes min_height and max_height columns in the Trees table
