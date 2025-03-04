@@ -6,7 +6,7 @@ def search_page():
     """
     Professional search page for inventory with advanced styling and user experience.
     """
-    # Enhanced Custom CSS for professional design
+    # Custom CSS for professional design
     st.markdown("""
     <style>
     /* Page Title Styling */
@@ -120,15 +120,20 @@ def search_page():
     # Get height range from database
     height_query = """
     SELECT 
-        MIN(CAST(REGEXP_REPLACE(t.mature_height, '[^0-9.]', '') AS FLOAT)) as min_height,
-        MAX(CAST(REGEXP_REPLACE(t.mature_height, '[^0-9.]', '') AS FLOAT)) as max_height
+        MIN(t.height) as min_height,
+        MAX(t.height) as max_height
     FROM Trees t
-    JOIN Nursery_Tree_Inventory nti ON t.common_name = nti.tree_common_name
-    WHERE t.mature_height ~ '^[0-9]+';
+    JOIN Nursery_Tree_Inventory nti ON t.common_name = nti.tree_common_name;
     """
-    height_results = run_query(height_query)
-    min_height = float(height_results[0]['min_height']) if height_results else 0
-    max_height = float(height_results[0]['max_height']) if height_results else 100
+    
+    try:
+        height_results = run_query(height_query)
+        min_height = float(height_results[0]['min_height']) if height_results and height_results[0]['min_height'] else 0
+        max_height = float(height_results[0]['max_height']) if height_results and height_results[0]['max_height'] else 100
+    except Exception:
+        # Fallback values if query fails
+        min_height = 0
+        max_height = 100
     
     # Dropdown for Tree Name from Nursery_Tree_Inventory
     query_tree_names = "SELECT DISTINCT tree_common_name FROM Nursery_Tree_Inventory;"
@@ -141,7 +146,7 @@ def search_page():
     # Dashboard Layout
     st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
     
-    # Create three columns for filters
+    # Create columns for filters
     col1, col2 = st.columns(2)
     
     with col1:
@@ -177,7 +182,7 @@ def search_page():
             params.append(selected_packaging)
             
         # Add height range condition
-        conditions.append("CAST(REGEXP_REPLACE(t.mature_height, '[^0-9.]', '') AS FLOAT) BETWEEN %s AND %s")
+        conditions.append("t.height BETWEEN %s AND %s")
         params.extend([height_range[0], height_range[1]])
         
         where_clause = " AND ".join(conditions)
@@ -186,7 +191,7 @@ def search_page():
             nti.tree_common_name as "Tree Name",
             nti.quantity_in_stock as "Stock",
             nti.price as "Price",
-            t.mature_height as "Height",
+            t.height as "Height",
             t.growth_rate as "Growth Rate",
             t.scientific_name as "Scientific Name",
             t.shape as "Shape",
