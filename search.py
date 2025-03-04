@@ -159,7 +159,7 @@ def search_page():
                         <hr style="border:none; border-top:1px solid #dee2e6; margin:10px 0;">
                         <p><strong>Quantity in Stock:</strong> {row['quantity_in_stock']}</p>
                         <p><strong>Price:</strong> {row['price']} IQD</p>
-                        <p><strong>Height Range:</strong> {row['min_height']} cm - {row['max_height']} cm</p>
+                        <p><strong>Height Range:</strong> {row['min_height']} cm to {row['max_height']} cm</p>
                         <p><strong>Shape:</strong> {row['shape']}</p>
                         <p><strong>Watering Demand:</strong> {row['watering_demand']}</p>
                         <p><strong>Origin:</strong> {row['origin']}</p>
