@@ -6,7 +6,7 @@ def search_page():
     """
     Professional search page for inventory with advanced styling and user experience.
     """
-    # Custom CSS for enhanced professional design
+    # Enhanced Custom CSS for professional design
     st.markdown("""
     <style>
     /* Page Title Styling */
@@ -19,7 +19,16 @@ def search_page():
         margin-bottom: 20px;
     }
 
-    /* Selectbox Styling */
+    /* Card Container */
+    .card {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+
+    /* Selectbox and Slider Styling */
     .stSelectbox > div > div > div {
         background-color: #f8f9fa;
         border: 1.5px solid #ced4da;
@@ -43,6 +52,7 @@ def search_page():
         text-transform: uppercase;
         padding: 10px 20px;
         transition: all 0.3s ease;
+        width: 100%;
     }
 
     .stButton > button:hover {
@@ -51,35 +61,74 @@ def search_page():
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
 
-    /* Dataframe Styling */
-    .dataframe {
-        width: 100%;
+    /* Enhanced Table Styling */
+    .styled-table {
         border-collapse: collapse;
-        margin-top: 20px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        border-radius: 10px;
-        overflow: hidden;
+        margin: 25px 0;
+        font-size: 0.9em;
+        font-family: sans-serif;
+        min-width: 400px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+        width: 100%;
     }
 
-    .dataframe th {
+    .styled-table thead tr {
         background-color: #007bff;
         color: white;
-        font-weight: 600;
-        border: 1px solid #dee2e6;
-        padding: 12px;
         text-align: left;
     }
 
-    .dataframe td {
+    .styled-table th,
+    .styled-table td {
+        padding: 12px 15px;
+    }
+
+    .styled-table tbody tr {
+        border-bottom: 1px solid #dddddd;
+    }
+
+    .styled-table tbody tr:nth-of-type(even) {
+        background-color: #f8f9fa;
+    }
+
+    .styled-table tbody tr:last-of-type {
+        border-bottom: 2px solid #007bff;
+    }
+
+    /* Dashboard Card */
+    .dashboard-card {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
         border: 1px solid #dee2e6;
-        padding: 10px;
-        color: #495057;
+        margin-bottom: 20px;
+    }
+
+    /* Section Headers */
+    .section-header {
+        color: #2c3e50;
+        font-size: 1.2em;
+        font-weight: 600;
+        margin-bottom: 10px;
     }
     </style>
     """, unsafe_allow_html=True)
 
     # Professional title with custom styling
     st.markdown('<h1 class="page-title">Search Inventory</h1>', unsafe_allow_html=True)
+    
+    # Get height range from database
+    height_query = """
+    SELECT 
+        MIN(CAST(REGEXP_REPLACE(t.mature_height, '[^0-9.]', '') AS FLOAT)) as min_height,
+        MAX(CAST(REGEXP_REPLACE(t.mature_height, '[^0-9.]', '') AS FLOAT)) as max_height
+    FROM Trees t
+    JOIN Nursery_Tree_Inventory nti ON t.common_name = nti.tree_common_name
+    WHERE t.mature_height ~ '^[0-9]+';
+    """
+    height_results = run_query(height_query)
+    min_height = float(height_results[0]['min_height']) if height_results else 0
+    max_height = float(height_results[0]['max_height']) if height_results else 100
     
     # Dropdown for Tree Name from Nursery_Tree_Inventory
     query_tree_names = "SELECT DISTINCT tree_common_name FROM Nursery_Tree_Inventory;"
@@ -89,67 +138,92 @@ def search_page():
     query_packaging = "SELECT DISTINCT packaging_type FROM Nursery_Tree_Inventory;"
     packaging_types = [row["packaging_type"] for row in run_query(query_packaging) or []]
     
-    # Create two columns for dropdown selectors
+    # Dashboard Layout
+    st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
+    
+    # Create three columns for filters
     col1, col2 = st.columns(2)
     
     with col1:
+        st.markdown('<p class="section-header">Tree Selection</p>', unsafe_allow_html=True)
         selected_tree = st.selectbox("Select Tree Name", ["All"] + tree_names)
     
     with col2:
+        st.markdown('<p class="section-header">Packaging</p>', unsafe_allow_html=True)
         selected_packaging = st.selectbox("Select Packaging Type", ["All"] + packaging_types)
     
-    # Query to get global minimum and maximum height boundaries
-    query_height = "SELECT MIN(min_height) AS global_min, MAX(max_height) AS global_max FROM Nursery_Tree_Inventory;"
-    height_data = run_query(query_height)
-    if height_data:
-        global_min = height_data[0]["global_min"]
-        global_max = height_data[0]["global_max"]
-    else:
-        global_min, global_max = 0, 0
+    # Height Range Slider
+    st.markdown('<p class="section-header">Height Range (feet)</p>', unsafe_allow_html=True)
+    height_range = st.slider(
+        "Select Height Range",
+        min_value=float(min_height),
+        max_value=float(max_height),
+        value=(float(min_height), float(max_height)),
+        step=0.5
+    )
     
-    # Height range slider dashboard
-    selected_height = st.slider("Select Height Range (Min - Max)", 
-                                min_value=float(global_min), 
-                                max_value=float(global_max), 
-                                value=(float(global_min), float(global_max)))
+    st.markdown('</div>', unsafe_allow_html=True)
     
-    # Search Button with Full Width
+    # Search Button
     if st.button("Search Inventory", use_container_width=True):
         conditions = []
         params = []
+        
         if selected_tree != "All":
             conditions.append("nti.tree_common_name = %s")
             params.append(selected_tree)
         if selected_packaging != "All":
             conditions.append("nti.packaging_type = %s")
             params.append(selected_packaging)
-        
-        # Add height range conditions
-        conditions.append("nti.min_height >= %s")
-        params.append(selected_height[0])
-        conditions.append("nti.max_height <= %s")
-        params.append(selected_height[1])
+            
+        # Add height range condition
+        conditions.append("CAST(REGEXP_REPLACE(t.mature_height, '[^0-9.]', '') AS FLOAT) BETWEEN %s AND %s")
+        params.extend([height_range[0], height_range[1]])
         
         where_clause = " AND ".join(conditions)
         query = f"""
-            SELECT nti.quantity_in_stock, nti.price, 
-                   t.growth_rate, t.scientific_name, t.shape, t.watering_demand, 
-                   t.main_photo_url, t.origin, t.soil_type, t.root_type, t.leafl_type, 
-                   n.address
-            FROM Nursery_Tree_Inventory nti
-            JOIN Trees t ON nti.tree_common_name = t.common_name
-            JOIN Nurseries n ON nti.nursery_name = n.nursery_name
-            WHERE {where_clause};
-            """
+        SELECT 
+            nti.tree_common_name as "Tree Name",
+            nti.quantity_in_stock as "Stock",
+            nti.price as "Price",
+            t.mature_height as "Height",
+            t.growth_rate as "Growth Rate",
+            t.scientific_name as "Scientific Name",
+            t.shape as "Shape",
+            t.watering_demand as "Watering",
+            n.address as "Nursery Location"
+        FROM Nursery_Tree_Inventory nti
+        JOIN Trees t ON nti.tree_common_name = t.common_name
+        JOIN Nurseries n ON nti.nursery_name = n.nursery_name
+        WHERE {where_clause}
+        ORDER BY nti.tree_common_name;
+        """
+        
         results = run_query(query, tuple(params))
         if results:
             df = pd.DataFrame(results)
-            st.markdown('<h2 style="color:#2c3e50; text-align:center; margin-top:20px;">Search Results</h2>', unsafe_allow_html=True)
-            # Display the table with professional styling using pandas styling
-            styled_df = df.style.set_table_styles([
-                {"selector": "thead", "props": [("background-color", "#007bff"), ("color", "white"), ("text-align", "center")]},
-                {"selector": "tbody tr", "props": [("background-color", "#f8f9fa"), ("color", "#495057")]}
-            ])
-            st.write(styled_df)
+            
+            # Custom table styling
+            st.markdown('<div style="overflow-x: auto;">', unsafe_allow_html=True)
+            st.markdown(
+                df.style
+                .set_properties(**{
+                    'background-color': '#f8f9fa',
+                    'color': '#2c3e50',
+                    'border': '1px solid #dee2e6',
+                    'text-align': 'left',
+                    'padding': '12px 15px'
+                })
+                .set_table_styles([
+                    {'selector': 'thead th',
+                     'props': [('background-color', '#007bff'),
+                              ('color', 'white'),
+                              ('font-weight', 'bold')]},
+                    {'selector': 'tbody tr:nth-of-type(even)',
+                     'props': [('background-color', '#ffffff')]},
+                ])
+                .to_html(), unsafe_allow_html=True
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
         else:
-            st.write("No results found.")
+            st.error("No results found matching your criteria.")
