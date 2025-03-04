@@ -31,9 +31,8 @@ def tree_data_entry():
         # Get existing values for dropdowns if available.
         df_trees = get_all_trees()
         shapes = df_trees["shape"].dropna().unique().tolist() if not df_trees.empty else []
-        shape = st.selectbox("Shape", options=[""] + shapes)
-        if shape == "":
-            shape = st.text_input("Enter Shape")
+        shape_choice = st.selectbox("Select Existing Shape", options=[""] + shapes)
+        shape = shape_choice if shape_choice != "" else st.text_input("Enter Shape")
         
         care_instructions = st.text_area("Care Instructions")
         main_photo_url = st.text_input("Main Photo URL")
@@ -61,5 +60,3 @@ def tree_data_entry():
             }
             add_tree(data)
             st.success("Tree added successfully!")
-    
-    # For bulk upload functionality, you can add a file uploader here and process CSV files.
