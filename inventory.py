@@ -31,12 +31,22 @@ def handle_inventory(entry_type):
         file = st.file_uploader("Upload CSV", type=["csv"])
         if file is not None:
             df = pd.read_csv(file)
+            df.columns = df.columns.str.lower()  # ensure headers are lower-case
             for index, row in df.iterrows():
                 query = """
                 INSERT INTO Nursery_Tree_Inventory (nursery_name, tree_common_name, quantity_in_stock, min_height, max_height, packaging_type, price, date)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
                 """
-                execute_query(query, (row["nursery_name"], row["tree_common_name"], row["quantity_in_stock"], row["min_height"], row["max_height"], row["packaging_type"], row["price"], row["date"]))
+                execute_query(query, (
+                    row["nursery_name"],
+                    row["tree_common_name"],
+                    row["quantity_in_stock"],
+                    row["min_height"],
+                    row["max_height"],
+                    row["packaging_type"],
+                    row["price"],
+                    row["date"]
+                ))
             st.success("Bulk inventory records added!")
     elif entry_type == "Modify/Delete":
         st.subheader("Modify/Delete Nursery Tree Inventory")
