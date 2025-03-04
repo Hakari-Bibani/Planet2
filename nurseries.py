@@ -144,10 +144,15 @@ def handle_nurseries(entry_type):
             # Improved data display
             st.dataframe(df, use_container_width=True)
             
-            selected_id = st.selectbox("Select Nursery ID to Modify/Delete", df["nursery_id"])
+            # Create two columns for selection
+            col1, col2 = st.columns(2)
             
-            # Create tabs for Modify and Delete
-            modify_tab, delete_tab = st.tabs(["Modify", "Delete"])
+            with col1:
+                selected_id = st.selectbox("Select Nursery ID to Modify/Delete", df["nursery_id"])
+            
+            with col2:
+                # Create tabs for Modify and Delete
+                modify_tab, delete_tab = st.tabs(["Modify", "Delete"])
             
             with modify_tab:
                 row = df[df["nursery_id"] == selected_id].iloc[0]
@@ -187,10 +192,10 @@ def main():
     # Main app title
     st.markdown("<h1 style='text-align: center; color: #2c3e50;'>🌱 Nursery Management System</h1>", unsafe_allow_html=True)
     
-    # Create tabs
+    # Create main tabs for entry types
     tab1, tab2, tab3 = st.tabs(["Single Entry", "Bulk Entry", "Modify/Delete"])
     
-    # Handle each tab
+    # Handle each main tab
     with tab1:
         handle_nurseries("Single Entry")
     
