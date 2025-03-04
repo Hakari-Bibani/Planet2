@@ -66,13 +66,9 @@ def handle_trees(entry_type):
             df = pd.DataFrame(data)
             st.dataframe(df)
             selected_id = st.selectbox("Select Tree ID to Modify/Delete", df["tree_id"])
-            action = st.radio("Action", ["Modify", "Delete"])
-            if action == "Delete":
-                if st.button("Delete Tree"):
-                    delete_query = "DELETE FROM Trees WHERE tree_id = %s;"
-                    execute_query(delete_query, (selected_id,))
-                    st.success("Tree deleted!")
-            else:
+            # Use horizontal tabs instead of a radio button for action selection.
+            action_tabs = st.tabs(["Modify", "Delete"])
+            with action_tabs[0]:
                 row = df[df["tree_id"] == selected_id].iloc[0]
                 common_name = st.text_input("Common Name", value=row["common_name"])
                 scientific_name = st.text_input("Scientific Name", value=row["scientific_name"])
@@ -93,3 +89,24 @@ def handle_trees(entry_type):
                     """
                     execute_query(update_query, (common_name, scientific_name, growth_rate, watering_demand, shape, care_instructions, main_photo_url, origin, soil_type, root_type, leafl_type, selected_id))
                     st.success("Tree updated!")
+            with action_tabs[1]:
+                if st.button("Delete Tree"):
+                    delete_query = "DELETE FROM Trees WHERE tree_id = %s;"
+                    execute_query(delete_query, (selected_id,))
+                    st.success("Tree deleted!")
+        else:
+            st.info("No tree data available.")
+
+# Main function using horizontal tabs to select the entry type.
+def main():
+    st.title("Tree Management")
+    tabs = st.tabs(["Single Entry", "Bulk Entry", "Modify/Delete"])
+    with tabs[0]:
+        handle_trees("Single Entry")
+    with tabs[1]:
+        handle_trees("Bulk Entry")
+    with tabs[2]:
+        handle_trees("Modify/Delete")
+
+if __name__ == "__main__":
+    main()
