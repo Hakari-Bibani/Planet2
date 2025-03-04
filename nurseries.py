@@ -190,15 +190,18 @@ def main():
     # Main app title
     st.markdown("<h1 style='text-align: center; color: #2c3e50;'>🌱 Nursery Management System</h1>", unsafe_allow_html=True)
     
-    # Horizontal Tabs
-    tab_options = ["Single Entry", "Bulk Entry", "Modify/Delete"]
-    selected_tab = st.radio("Select Entry Type", tab_options, horizontal=True)
+    # Create tabs
+    tab1, tab2, tab3 = st.tabs(["Single Entry", "Bulk Entry", "Modify/Delete"])
     
-    # Add some spacing
-    st.markdown("---")
+    # Handle each tab
+    with tab1:
+        handle_nurseries("Single Entry")
     
-    # Handle the selected tab
-    handle_nurseries(selected_tab)
+    with tab2:
+        handle_nurseries("Bulk Entry")
+    
+    with tab3:
+        handle_nurseries("Modify/Delete")
 
 if __name__ == "__main__":
     main()
