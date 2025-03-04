@@ -24,3 +24,55 @@ def sidebar_menu():
     st.sidebar.title("Navigation")
     option = st.sidebar.radio("Choose Page", ("Data Entry", "Search"))
     return option
+----------------------------
+
+search.py 
+
+import streamlit as st
+import pandas as pd
+from handle import run_query
+
+def search_page():
+    st.title("Search Inventory")
+    
+    # Dropdown for Tree Name from Nursery_Tree_Inventory
+    query_tree_names = "SELECT DISTINCT tree_common_name FROM Nursery_Tree_Inventory;"
+    tree_names = [row["tree_common_name"] for row in run_query(query_tree_names) or []]
+    
+    # Dropdown for Packaging Type from Nursery_Tree_Inventory
+    query_packaging = "SELECT DISTINCT packaging_type FROM Nursery_Tree_Inventory;"
+    packaging_types = [row["packaging_type"] for row in run_query(query_packaging) or []]
+
+    selected_tree = st.selectbox("Tree Name", ["All"] + tree_names)
+    selected_packaging = st.selectbox("Packaging Type", ["All"] + packaging_types)
+
+    if st.button("Search"):
+        conditions = []
+        params = []
+        if selected_tree != "All":
+            conditions.append("nti.tree_common_name = %s")
+            params.append(selected_tree)
+        if selected_packaging != "All":
+            conditions.append("nti.packaging_type = %s")
+            params.append(selected_packaging)
+        
+        if conditions:
+            where_clause = " AND ".join(conditions)
+            query = f"""
+            SELECT nti.quantity_in_stock, nti.price, 
+                   t.growth_rate, t.scientific_name, t.shape, t.watering_demand, 
+                   t.main_photo_url, t.origin, t.soil_type, t.root_type, t.leafl_type, 
+                   n.address
+            FROM Nursery_Tree_Inventory nti
+            JOIN Trees t ON nti.tree_common_name = t.common_name
+            JOIN Nurseries n ON nti.nursery_name = n.nursery_name
+            WHERE {where_clause};
+            """
+            results = run_query(query, tuple(params))
+            if results:
+                df = pd.DataFrame(results)
+                st.dataframe(df)
+            else:
+                st.write("No results found.")
+        else:
+            st.write("Please select at least one filter.")
