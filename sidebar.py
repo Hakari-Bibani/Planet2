@@ -73,14 +73,4 @@ def sidebar_menu():
     if st.sidebar.button("🔍 Search", use_container_width=True):
         st.session_state.selected_page = "Search"
 
-    # Add a separator
-    st.sidebar.markdown("---")
-
-    # Additional navigation buttons
-    if st.sidebar.button("📊 Analytics", use_container_width=True):
-        st.session_state.selected_page = "Analytics"
-
-    if st.sidebar.button("⚙️ Settings", use_container_width=True):
-        st.session_state.selected_page = "Settings"
-
     return st.session_state.selected_page
