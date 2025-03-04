@@ -1,26 +1,10 @@
 import streamlit as st
-from handle import run_query, fetch_dataframe
+import pandas as pd
+from handle import run_query, execute_query, fetch_dropdown
 
-def add_nursery(data):
-    query = """
-    INSERT INTO "Nurseries" 
-    ("Registration_code", "Nursery_name", "Address", "Contact_name", "Contact_phone", "Google_map_link", "Additional_notes")
-    VALUES (%s, %s, %s, %s, %s, %s, %s)
-    """
-    params = (
-        data.get("Registration_code"), data.get("Nursery_name"), data.get("Address"),
-        data.get("Contact_name"), data.get("Contact_phone"), data.get("Google_map_link"),
-        data.get("Additional_notes")
-    )
-    run_query(query, params)
-
-def get_all_nurseries():
-    query = 'SELECT * FROM "Nurseries"'
-    return fetch_dataframe(query)
-
-def nursery_data_entry():
-    st.subheader("Nursery Data Entry (Single)")
-    with st.form("nursery_entry_form"):
+def handle_nurseries(entry_type):
+    if entry_type == "Single Entry":
+        st.subheader("Add Single Nursery")
         registration_code = st.text_input("Registration Code")
         nursery_name = st.text_input("Nursery Name")
         address = st.text_input("Address")
@@ -28,17 +12,74 @@ def nursery_data_entry():
         contact_phone = st.text_input("Contact Phone")
         google_map_link = st.text_input("Google Map Link")
         additional_notes = st.text_area("Additional Notes")
-        
-        submitted = st.form_submit_button("Add Nursery")
-        if submitted:
-            data = {
-                "Registration_code": registration_code,
-                "Nursery_name": nursery_name,
-                "Address": address,
-                "Contact_name": contact_name,
-                "Contact_phone": contact_phone,
-                "Google_map_link": google_map_link,
-                "Additional_notes": additional_notes,
-            }
-            add_nursery(data)
-            st.success("Nursery added successfully!")
+        if st.button("Add Nursery"):
+            query = """
+            INSERT INTO Nurseries (registration_code, nursery_name, address, contact_name, contact_phone, google_map_link, additional_notes)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (nursery_name) DO UPDATE SET
+                registration_code = EXCLUDED.registration_code,
+                address = EXCLUDED.address,
+                contact_name = EXCLUDED.contact_name,
+                contact_phone = EXCLUDED.contact_phone,
+                google_map_link = EXCLUDED.google_map_link,
+                additional_notes = EXCLUDED.additional_notes;
+            """
+            execute_query(query, (registration_code, nursery_name, address, contact_name, contact_phone, google_map_link, additional_notes))
+            st.success("Nursery added or updated successfully!")
+    elif entry_type == "Bulk Entry":
+        st.subheader("Bulk Add Nurseries")
+        file = st.file_uploader("Upload CSV", type=["csv"])
+        if file is not None:
+            df = pd.read_csv(file)
+            for index, row in df.iterrows():
+                query = """
+                INSERT INTO Nurseries (registration_code, nursery_name, address, contact_name, contact_phone, google_map_link, additional_notes)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (nursery_name) DO UPDATE SET
+                    registration_code = EXCLUDED.registration_code,
+                    address = EXCLUDED.address,
+                    contact_name = EXCLUDED.contact_name,
+                    contact_phone = EXCLUDED.contact_phone,
+                    google_map_link = EXCLUDED.google_map_link,
+                    additional_notes = EXCLUDED.additional_notes;
+                """
+                execute_query(query, (
+                    row["registration_code"],
+                    row["nursery_name"],
+                    row["address"],
+                    row["contact_name"],
+                    row["contact_phone"],
+                    row["google_map_link"],
+                    row.get("additional_notes", "")
+                ))
+            st.success("Bulk nurseries added or updated!")
+    elif entry_type == "Modify/Delete":
+        st.subheader("Modify/Delete Nurseries")
+        query = "SELECT * FROM Nurseries;"
+        data = run_query(query)
+        if data:
+            df = pd.DataFrame(data)
+            st.dataframe(df)
+            selected_id = st.selectbox("Select Nursery ID to Modify/Delete", df["nursery_id"])
+            action = st.radio("Action", ["Modify", "Delete"])
+            if action == "Delete":
+                if st.button("Delete Nursery"):
+                    delete_query = "DELETE FROM Nurseries WHERE nursery_id = %s;"
+                    execute_query(delete_query, (selected_id,))
+                    st.success("Nursery deleted!")
+            else:
+                row = df[df["nursery_id"] == selected_id].iloc[0]
+                registration_code = st.text_input("Registration Code", value=row["registration_code"])
+                nursery_name = st.text_input("Nursery Name", value=row["nursery_name"])
+                address = st.text_input("Address", value=row["address"])
+                contact_name = st.text_input("Contact Name", value=row["contact_name"])
+                contact_phone = st.text_input("Contact Phone", value=row["contact_phone"])
+                google_map_link = st.text_input("Google Map Link", value=row["google_map_link"])
+                additional_notes = st.text_area("Additional Notes", value=row["additional_notes"])
+                if st.button("Update Nursery"):
+                    update_query = """
+                    UPDATE Nurseries SET registration_code=%s, nursery_name=%s, address=%s, contact_name=%s, contact_phone=%s, google_map_link=%s, additional_notes=%s
+                    WHERE nursery_id=%s;
+                    """
+                    execute_query(update_query, (registration_code, nursery_name, address, contact_name, contact_phone, google_map_link, additional_notes, selected_id))
+                    st.success("Nursery updated!")
