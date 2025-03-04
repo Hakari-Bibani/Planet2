@@ -58,38 +58,38 @@ def handle_trees(entry_type):
         col1, col2 = st.columns(2)
         
         with col1:
-            common_name = st.text_input("Common Name")
-            scientific_name = st.text_input("Scientific Name")
-            growth_rate = st.number_input("Growth Rate (cm/yr)", value=0.0)
-            watering_demand = st.text_input("Watering Demand")
+            common_name = st.text_input("🌳 Common Name", help="The common name of the tree")
+            scientific_name = st.text_input("🔬 Scientific Name", help="The scientific name of the tree")
+            growth_rate = st.number_input("📈 Growth Rate (cm/yr)", value=0.0, help="The growth rate in cm per year")
+            watering_demand = st.text_input("💧 Watering Demand", help="The watering demand of the tree")
         
         with col2:
             existing_shape = fetch_dropdown("Trees", "shape")
-            shape_choice = st.selectbox("Shape", (["Add New"] + existing_shape) if existing_shape else ["Add New"])
+            shape_choice = st.selectbox("🌿 Shape", (["Add New"] + existing_shape) if existing_shape else ["Add New"])
             shape = st.text_input("Enter Shape") if shape_choice == "Add New" else shape_choice
             existing_origin = fetch_dropdown("Trees", "origin")
-            origin_choice = st.selectbox("Origin", (["Add New"] + existing_origin) if existing_origin else ["Add New"])
+            origin_choice = st.selectbox("🌍 Origin", (["Add New"] + existing_origin) if existing_origin else ["Add New"])
             origin = st.text_input("Enter Origin") if origin_choice == "Add New" else origin_choice
         
         existing_soil = fetch_dropdown("Trees", "soil_type")
-        soil_choice = st.selectbox("Soil Type", (["Add New"] + existing_soil) if existing_soil else ["Add New"])
+        soil_choice = st.selectbox("🌱 Soil Type", (["Add New"] + existing_soil) if existing_soil else ["Add New"])
         soil_type = st.text_input("Enter Soil Type") if soil_choice == "Add New" else soil_choice
         existing_root = fetch_dropdown("Trees", "root_type")
-        root_choice = st.selectbox("Root Type", (["Add New"] + existing_root) if existing_root else ["Add New"])
+        root_choice = st.selectbox("🌳 Root Type", (["Add New"] + existing_root) if existing_root else ["Add New"])
         root_type = st.text_input("Enter Root Type") if root_choice == "Add New" else root_choice
         existing_leaf = fetch_dropdown("Trees", "leafl_type")
-        leaf_choice = st.selectbox("Leaf Type", (["Add New"] + existing_leaf) if existing_leaf else ["Add New"])
+        leaf_choice = st.selectbox("🍃 Leaf Type", (["Add New"] + existing_leaf) if existing_leaf else ["Add New"])
         leafl_type = st.text_input("Enter Leaf Type") if leaf_choice == "Add New" else leaf_choice
-        care_instructions = st.text_area("Care Instructions")
-        main_photo_url = st.text_input("Main Photo URL")
+        care_instructions = st.text_area("📝 Care Instructions", help="Detailed care instructions for the tree")
+        main_photo_url = st.text_input("🌐 Main Photo URL", help="URL to the main photo of the tree")
         
-        if st.button("Add Tree"):
+        if st.button("🌳 Add Tree"):
             query = """
             INSERT INTO Trees (common_name, scientific_name, growth_rate, watering_demand, shape, care_instructions, main_photo_url, origin, soil_type, root_type, leafl_type)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """
             execute_query(query, (common_name, scientific_name, growth_rate, watering_demand, shape, care_instructions, main_photo_url, origin, soil_type, root_type, leafl_type))
-            st.success("Tree added successfully!")
+            st.success("🌳 Tree added successfully!")
 
     elif entry_type == "Bulk Entry":
         st.markdown("""
@@ -99,15 +99,15 @@ def handle_trees(entry_type):
         </div>
         """, unsafe_allow_html=True)
         
-        file = st.file_uploader("Upload CSV", type=["csv"])
+        file = st.file_uploader("📁 Upload CSV", type=["csv"], help="CSV file with tree details")
         if file is not None:
             df = pd.read_csv(file)
             df.columns = df.columns.str.lower()  # ensure headers are lower-case
             
-            st.write("Preview of Uploaded Data:")
+            st.write("📋 Preview of Uploaded Data:")
             st.dataframe(df)
             
-            if st.button("Confirm Bulk Upload"):
+            if st.button("📂 Confirm Bulk Upload"):
                 for index, row in df.iterrows():
                     query = """
                     INSERT INTO Trees (common_name, scientific_name, growth_rate, watering_demand, shape, care_instructions, main_photo_url, origin, soil_type, root_type, leafl_type)
@@ -143,7 +143,7 @@ def handle_trees(entry_type):
             
             st.dataframe(df, use_container_width=True)
             
-            selected_id = st.selectbox("Select Tree ID to Modify/Delete", df["tree_id"])
+            selected_id = st.selectbox("🌳 Select Tree ID to Modify/Delete", df["tree_id"])
             action_tabs = st.tabs(["Modify", "Delete"])
             
             with action_tabs[0]:
@@ -166,22 +166,22 @@ def handle_trees(entry_type):
                     root_type = st.text_input("Root Type", value=row["root_type"])
                     leafl_type = st.text_input("Leaf Type", value=row["leafl_type"])
                 
-                if st.button("Update Tree"):
+                if st.button("💾 Update Tree"):
                     update_query = """
                     UPDATE Trees SET common_name=%s, scientific_name=%s, growth_rate=%s, watering_demand=%s, shape=%s, 
                     care_instructions=%s, main_photo_url=%s, origin=%s, soil_type=%s, root_type=%s, leafl_type=%s
                     WHERE tree_id=%s;
                     """
                     execute_query(update_query, (common_name, scientific_name, growth_rate, watering_demand, shape, care_instructions, main_photo_url, origin, soil_type, root_type, leafl_type, selected_id))
-                    st.success("Tree updated!")
+                    st.success("🌳 Tree updated!")
             
             with action_tabs[1]:
-                if st.button("Confirm Delete"):
+                if st.button("🗑️ Confirm Delete"):
                     delete_query = "DELETE FROM Trees WHERE tree_id = %s;"
                     execute_query(delete_query, (selected_id,))
-                    st.success("Tree deleted!")
+                    st.success("🗑️ Tree deleted!")
         else:
-            st.info("No tree data available.")
+            st.info("ℹ️ No tree data available.")
 
 def main():
     local_css()
