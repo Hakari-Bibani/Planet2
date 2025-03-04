@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit_shadcn_ui as ui
 
 def sidebar_menu():
     """
@@ -28,12 +27,12 @@ def sidebar_menu():
         font-size: 1.5em;
     }
 
-    /* Circular navigation buttons */
-    .nav-button {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        margin: 15px auto;
+    /* Navigation buttons */
+    .stButton > button {
+        width: 100%;
+        height: 60px;
+        border-radius: 10px;
+        margin: 10px 0;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -46,22 +45,16 @@ def sidebar_menu():
         transition: all 0.3s ease;
     }
 
-    .nav-button:hover {
+    .stButton > button:hover {
         background-color: #007bff;
         color: white;
-        transform: scale(1.05);
+        transform: scale(1.02);
         box-shadow: 0 6px 8px rgba(0,0,0,0.15);
     }
 
-    .nav-button:focus {
+    .stButton > button:focus {
         outline: none;
         border-color: #0056b3;
-    }
-
-    /* Active button state */
-    .nav-button.active {
-        background-color: #007bff;
-        color: white;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -73,37 +66,21 @@ def sidebar_menu():
     if 'selected_page' not in st.session_state:
         st.session_state.selected_page = "Data Entry"
 
-    # Create vertical navigation buttons
-    def create_nav_button(label):
-        """
-        Create a styled navigation button.
-        
-        Args:
-            label (str): Text for the navigation button
-        
-        Returns:
-            bool: Whether the button was clicked
-        """
-        button_class = "nav-button active" if st.session_state.selected_page == label else "nav-button"
-        return st.sidebar.button(label, key=f"{label.lower().replace(' ', '_')}_btn", 
-                                 use_container_width=True,
-                                 help=f"Navigate to {label} page")
-
-    # Navigation buttons
-    if create_nav_button("Data Entry"):
+    # Create navigation buttons
+    if st.sidebar.button("📋 Data Entry", use_container_width=True):
         st.session_state.selected_page = "Data Entry"
 
-    if create_nav_button("Search"):
+    if st.sidebar.button("🔍 Search", use_container_width=True):
         st.session_state.selected_page = "Search"
 
-    # Optional: Add a separator or additional nav items
-    st.sidebar.divider()
+    # Add a separator
+    st.sidebar.markdown("---")
 
-    # Optional additional navigation or utility buttons
-    if st.sidebar.button("📊 Analytics", key="analytics_btn", use_container_width=True):
+    # Additional navigation buttons
+    if st.sidebar.button("📊 Analytics", use_container_width=True):
         st.session_state.selected_page = "Analytics"
 
-    if st.sidebar.button("⚙️ Settings", key="settings_btn", use_container_width=True):
+    if st.sidebar.button("⚙️ Settings", use_container_width=True):
         st.session_state.selected_page = "Settings"
 
     return st.session_state.selected_page
