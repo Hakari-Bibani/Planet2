@@ -40,9 +40,8 @@ def inventory_data_entry():
         # Packaging_type dropdown: show existing values from inventory
         df_inventory = get_all_inventory()
         packaging_types = df_inventory["Packaging_type"].dropna().unique().tolist() if not df_inventory.empty else []
-        packaging_type = st.selectbox("Packaging Type", options=[""] + packaging_types)
-        if packaging_type == "":
-            packaging_type = st.text_input("Enter Packaging Type")
+        packaging_choice = st.selectbox("Select Existing Packaging Type", options=[""] + packaging_types)
+        packaging_type = packaging_choice if packaging_choice != "" else st.text_input("Enter Packaging Type")
         
         price = st.number_input("Price", min_value=0.0, format="%.2f")
         date = st.date_input("Date")
@@ -61,5 +60,3 @@ def inventory_data_entry():
             }
             add_inventory(data)
             st.success("Inventory added successfully!")
-    
-    # You can also add functionality for bulk uploads here.
