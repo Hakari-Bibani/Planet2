@@ -47,7 +47,7 @@ def search_page():
     tree_names = df_inventory["tree_common_name"].unique().tolist()
     packaging_types = df_inventory["Packaging_type"].unique().tolist()
     
-    # For the height ranges, use min and max values from the data if available.
+    # Use the min and max values from the data for the height sliders
     min_height_val = float(df_inventory["Min_height"].min()) if not df_inventory["Min_height"].isnull().all() else 0.0
     max_height_val = float(df_inventory["Max_height"].max()) if not df_inventory["Max_height"].isnull().all() else 10.0
     
