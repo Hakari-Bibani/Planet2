@@ -125,8 +125,9 @@ def search_page():
         if selected_packaging != "All":
             conditions.append("nti.packaging_type = %s")
             params.append(selected_packaging)
+        # Modified height condition: allow near or exact matches by checking for any overlap.
         if selected_height_range:
-            conditions.append("nti.min_height >= %s AND nti.max_height <= %s")
+            conditions.append("nti.max_height >= %s AND nti.min_height <= %s")
             params.extend([selected_height_range[0], selected_height_range[1]])
         
         if conditions:
