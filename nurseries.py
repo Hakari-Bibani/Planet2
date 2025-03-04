@@ -144,21 +144,12 @@ def handle_nurseries(entry_type):
             # Improved data display
             st.dataframe(df, use_container_width=True)
             
-            col1, col2 = st.columns(2)
+            selected_id = st.selectbox("Select Nursery ID to Modify/Delete", df["nursery_id"])
             
-            with col1:
-                selected_id = st.selectbox("Select Nursery ID to Modify/Delete", df["nursery_id"])
+            # Create tabs for Modify and Delete
+            modify_tab, delete_tab = st.tabs(["Modify", "Delete"])
             
-            with col2:
-                action = st.radio("Action", ["Modify", "Delete"], horizontal=True)
-            
-            if action == "Delete":
-                if st.button("Confirm Delete", type="primary"):
-                    delete_query = "DELETE FROM Nurseries WHERE nursery_id = %s;"
-                    execute_query(delete_query, (selected_id,))
-                    st.success("🗑️ Nursery deleted successfully!")
-            
-            else:
+            with modify_tab:
                 row = df[df["nursery_id"] == selected_id].iloc[0]
                 
                 col1, col2 = st.columns(2)
@@ -182,6 +173,12 @@ def handle_nurseries(entry_type):
                     """
                     execute_query(update_query, (registration_code, nursery_name, address, contact_name, contact_phone, google_map_link, additional_notes, selected_id))
                     st.success("✅ Nursery updated successfully!")
+            
+            with delete_tab:
+                if st.button("Confirm Delete", type="primary"):
+                    delete_query = "DELETE FROM Nurseries WHERE nursery_id = %s;"
+                    execute_query(delete_query, (selected_id,))
+                    st.success("🗑️ Nursery deleted successfully!")
 
 def main():
     # Apply custom CSS
