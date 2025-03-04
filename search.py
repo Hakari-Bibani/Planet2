@@ -34,11 +34,6 @@ def search_page():
         box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
     }
 
-    /* Slider Styling */
-    div[data-baseweb="slider"] {
-        margin: 20px 0;
-    }
-
     /* Search Button Styling */
     .stButton > button {
         background-color: #007bff !important;
@@ -100,25 +95,21 @@ def search_page():
     with col2:
         selected_packaging = st.selectbox("Select Packaging Type", ["All"] + packaging_types)
     
-    # Retrieve height bounds based on selected tree (or overall if "All")
+    # Dashboard: Add Minimum and Maximum Height slider based on available data.
     if selected_tree != "All":
-        query_bounds = "SELECT MIN(min_height) AS min_val, MAX(max_height) AS max_val FROM Nursery_Tree_Inventory WHERE tree_common_name = %s;"
-        bounds = run_query(query_bounds, (selected_tree,))
+        query_range = "SELECT MIN(min_height) AS min_range, MAX(max_height) AS max_range FROM Nursery_Tree_Inventory WHERE tree_common_name = %s;"
+        range_result = run_query(query_range, (selected_tree,))
     else:
-        query_bounds = "SELECT MIN(min_height) AS min_val, MAX(max_height) AS max_val FROM Nursery_Tree_Inventory;"
-        bounds = run_query(query_bounds)
+        query_range = "SELECT MIN(min_height) AS min_range, MAX(max_height) AS max_range FROM Nursery_Tree_Inventory;"
+        range_result = run_query(query_range)
     
-    if bounds and bounds[0]['min_val'] is not None and bounds[0]['max_val'] is not None:
-        min_bound = float(bounds[0]['min_val'])
-        max_bound = float(bounds[0]['max_val'])
-        col3, col4 = st.columns(2)
-        with col3:
-            selected_min_height = st.slider("Minimum Height", min_value=min_bound, max_value=max_bound, value=min_bound, step=0.1)
-        with col4:
-            selected_max_height = st.slider("Maximum Height", min_value=min_bound, max_value=max_bound, value=max_bound, step=0.1)
+    if range_result and range_result[0]["min_range"] is not None and range_result[0]["max_range"] is not None:
+        range_min = range_result[0]["min_range"]
+        range_max = range_result[0]["max_range"]
     else:
-        selected_min_height = None
-        selected_max_height = None
+        range_min, range_max = 0, 0
+    
+    height_range = st.slider("Select Height Range (cm)", min_value=range_min, max_value=range_max, value=(range_min, range_max))
     
     # Search Button with Full Width
     if st.button("Search Inventory", use_container_width=True):
@@ -130,30 +121,43 @@ def search_page():
         if selected_packaging != "All":
             conditions.append("nti.packaging_type = %s")
             params.append(selected_packaging)
-        if selected_min_height is not None and selected_max_height is not None:
-            conditions.append("nti.min_height >= %s")
-            params.append(selected_min_height)
-            conditions.append("nti.max_height <= %s")
-            params.append(selected_max_height)
+        # Add height range condition to support near or exact data match (records overlapping the selected range)
+        conditions.append("nti.min_height <= %s")
+        params.append(height_range[1])
+        conditions.append("nti.max_height >= %s")
+        params.append(height_range[0])
         
-        if conditions:
-            where_clause = " AND ".join(conditions)
-            query = f"""
-            SELECT nti.quantity_in_stock, nti.price, nti.min_height, nti.max_height,
-                   t.growth_rate, t.scientific_name, t.shape, t.watering_demand, 
-                   t.main_photo_url, t.origin, t.soil_type, t.root_type, t.leafl_type, 
-                   n.address
-            FROM Nursery_Tree_Inventory nti
-            JOIN Trees t ON nti.tree_common_name = t.common_name
-            JOIN Nurseries n ON nti.nursery_name = n.nursery_name
-            WHERE {where_clause};
-            """
-            results = run_query(query, tuple(params))
-            if results:
-                df = pd.DataFrame(results)
-                st.markdown('<h2 style="text-align: center; color: #2c3e50;">Inventory Results</h2>', unsafe_allow_html=True)
-                st.dataframe(df)
-            else:
-                st.write("No results found.")
+        where_clause = " AND ".join(conditions)
+        query = f"""
+        SELECT nti.quantity_in_stock, nti.price, nti.min_height, nti.max_height,
+               t.growth_rate, t.scientific_name, t.shape, t.watering_demand, 
+               t.main_photo_url, t.origin, t.soil_type, t.root_type, t.leafl_type, 
+               n.address
+        FROM Nursery_Tree_Inventory nti
+        JOIN Trees t ON nti.tree_common_name = t.common_name
+        JOIN Nurseries n ON nti.nursery_name = n.nursery_name
+        WHERE {where_clause};
+        """
+        results = run_query(query, tuple(params))
+        if results:
+            df = pd.DataFrame(results)
+            # Rename columns for a more professional display
+            df.rename(columns={
+                "quantity_in_stock": "Quantity In Stock",
+                "price": "Price (IQD)",
+                "min_height": "Minimum Height (cm)",
+                "max_height": "Maximum Height (cm)",
+                "growth_rate": "Growth Rate (cm/yr)",
+                "scientific_name": "Scientific Name",
+                "shape": "Shape",
+                "watering_demand": "Watering Demand",
+                "main_photo_url": "Main Photo URL",
+                "origin": "Origin",
+                "soil_type": "Soil Type",
+                "root_type": "Root Type",
+                "leafl_type": "Leaf Type",
+                "address": "Nursery Address"
+            }, inplace=True)
+            st.dataframe(df)
         else:
-            st.write("Please select at least one filter.")
+            st.write("No results found.")
