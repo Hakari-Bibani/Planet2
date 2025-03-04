@@ -1,7 +1,7 @@
 import streamlit as st
 
 def sidebar_menu():
-    st.sidebar.title("Navigation")
+    st.sidebar.title("Admin Page")
 
     # Inject custom CSS to style the buttons as circles
     st.sidebar.markdown("""
