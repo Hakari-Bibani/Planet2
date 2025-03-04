@@ -109,8 +109,8 @@ def search_page():
         height_range = run_query(height_range_query)
         
     if height_range and height_range[0]['min_val'] is not None and height_range[0]['max_val'] is not None:
-        slider_min = height_range[0]['min_val']
-        slider_max = height_range[0]['max_val']
+        slider_min = float(height_range[0]['min_val'])
+        slider_max = float(height_range[0]['max_val'])
         selected_height_range = st.slider("Select Height Range (cm)", min_value=slider_min, max_value=slider_max, value=(slider_min, slider_max))
     else:
         selected_height_range = None
