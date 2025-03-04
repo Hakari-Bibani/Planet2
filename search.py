@@ -56,11 +56,14 @@ def search_page():
         width: 100%;
         border-collapse: collapse;
         margin-top: 20px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-radius: 10px;
+        overflow: hidden;
     }
 
     .dataframe th {
-        background-color: #f8f9fa;
-        color: #2c3e50;
+        background-color: #007bff;
+        color: white;
         font-weight: 600;
         border: 1px solid #dee2e6;
         padding: 12px;
@@ -95,6 +98,21 @@ def search_page():
     with col2:
         selected_packaging = st.selectbox("Select Packaging Type", ["All"] + packaging_types)
     
+    # Query to get global minimum and maximum height boundaries
+    query_height = "SELECT MIN(min_height) AS global_min, MAX(max_height) AS global_max FROM Nursery_Tree_Inventory;"
+    height_data = run_query(query_height)
+    if height_data:
+        global_min = height_data[0]["global_min"]
+        global_max = height_data[0]["global_max"]
+    else:
+        global_min, global_max = 0, 0
+    
+    # Height range slider dashboard
+    selected_height = st.slider("Select Height Range (Min - Max)", 
+                                min_value=float(global_min), 
+                                max_value=float(global_max), 
+                                value=(float(global_min), float(global_max)))
+    
     # Search Button with Full Width
     if st.button("Search Inventory", use_container_width=True):
         conditions = []
@@ -106,9 +124,14 @@ def search_page():
             conditions.append("nti.packaging_type = %s")
             params.append(selected_packaging)
         
-        if conditions:
-            where_clause = " AND ".join(conditions)
-            query = f"""
+        # Add height range conditions
+        conditions.append("nti.min_height >= %s")
+        params.append(selected_height[0])
+        conditions.append("nti.max_height <= %s")
+        params.append(selected_height[1])
+        
+        where_clause = " AND ".join(conditions)
+        query = f"""
             SELECT nti.quantity_in_stock, nti.price, 
                    t.growth_rate, t.scientific_name, t.shape, t.watering_demand, 
                    t.main_photo_url, t.origin, t.soil_type, t.root_type, t.leafl_type, 
@@ -118,11 +141,15 @@ def search_page():
             JOIN Nurseries n ON nti.nursery_name = n.nursery_name
             WHERE {where_clause};
             """
-            results = run_query(query, tuple(params))
-            if results:
-                df = pd.DataFrame(results)
-                st.dataframe(df)
-            else:
-                st.write("No results found.")
+        results = run_query(query, tuple(params))
+        if results:
+            df = pd.DataFrame(results)
+            st.markdown('<h2 style="color:#2c3e50; text-align:center; margin-top:20px;">Search Results</h2>', unsafe_allow_html=True)
+            # Display the table with professional styling using pandas styling
+            styled_df = df.style.set_table_styles([
+                {"selector": "thead", "props": [("background-color", "#007bff"), ("color", "white"), ("text-align", "center")]},
+                {"selector": "tbody tr", "props": [("background-color", "#f8f9fa"), ("color", "#495057")]}
+            ])
+            st.write(styled_df)
         else:
-            st.write("Please select at least one filter.")
+            st.write("No results found.")
