@@ -1,9 +1,11 @@
 import streamlit as st
-from pages import data_entry, search
+from sidebar import sidebar_menu
 
-st.set_page_config(page_title="Planet2", layout="wide")
-menu = st.sidebar.radio("Navigation", ["Data Entry", "Search"])
-if menu == "Data Entry":
-    data_entry.app()
-elif menu == "Search":
-    search.app()
+selected_page = sidebar_menu()
+
+if selected_page == "Data Entry":
+    import table
+    table.data_entry_page()
+elif selected_page == "Search":
+    import search
+    search.search_page()
