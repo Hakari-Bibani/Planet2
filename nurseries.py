@@ -144,17 +144,12 @@ def handle_nurseries(entry_type):
             # Improved data display
             st.dataframe(df, use_container_width=True)
             
-            # Create two columns for selection
-            col1, col2 = st.columns(2)
+            selected_id = st.selectbox("Select Nursery ID to Modify/Delete", df["nursery_id"])
             
-            with col1:
-                selected_id = st.selectbox("Select Nursery ID to Modify/Delete", df["nursery_id"])
+            # Create horizontal tabs for Modify and Delete actions
+            action_tabs = st.tabs(["Modify", "Delete"])
             
-            with col2:
-                # Create tabs for Modify and Delete
-                modify_tab, delete_tab = st.tabs(["Modify", "Delete"])
-            
-            with modify_tab:
+            with action_tabs[0]:
                 row = df[df["nursery_id"] == selected_id].iloc[0]
                 
                 col1, col2 = st.columns(2)
@@ -171,7 +166,7 @@ def handle_nurseries(entry_type):
                 
                 additional_notes = st.text_area("Additional Notes", value=row["additional_notes"])
                 
-                if st.button("Update Nursery", type="primary"):
+                if st.button("Update Nursery", key="update_nursery"):
                     update_query = """
                     UPDATE Nurseries SET registration_code=%s, nursery_name=%s, address=%s, contact_name=%s, contact_phone=%s, google_map_link=%s, additional_notes=%s
                     WHERE nursery_id=%s;
@@ -179,11 +174,13 @@ def handle_nurseries(entry_type):
                     execute_query(update_query, (registration_code, nursery_name, address, contact_name, contact_phone, google_map_link, additional_notes, selected_id))
                     st.success("✅ Nursery updated successfully!")
             
-            with delete_tab:
-                if st.button("Confirm Delete", type="primary"):
+            with action_tabs[1]:
+                if st.button("Confirm Delete", key="delete_nursery"):
                     delete_query = "DELETE FROM Nurseries WHERE nursery_id = %s;"
                     execute_query(delete_query, (selected_id,))
                     st.success("🗑️ Nursery deleted successfully!")
+        else:
+            st.info("No nursery data available.")
 
 def main():
     # Apply custom CSS
@@ -192,17 +189,16 @@ def main():
     # Main app title
     st.markdown("<h1 style='text-align: center; color: #2c3e50;'>🌱 Nursery Management System</h1>", unsafe_allow_html=True)
     
-    # Create main tabs for entry types
-    tab1, tab2, tab3 = st.tabs(["Single Entry", "Bulk Entry", "Modify/Delete"])
+    # Create horizontal tabs for different entry types
+    tabs = st.tabs(["Single Entry", "Bulk Entry", "Modify/Delete"])
     
-    # Handle each main tab
-    with tab1:
+    with tabs[0]:
         handle_nurseries("Single Entry")
     
-    with tab2:
+    with tabs[1]:
         handle_nurseries("Bulk Entry")
     
-    with tab3:
+    with tabs[2]:
         handle_nurseries("Modify/Delete")
 
 if __name__ == "__main__":
