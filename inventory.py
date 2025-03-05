@@ -1,5 +1,3 @@
-nurseries.py: 
-
 import streamlit as st
 import pandas as pd
 from handle import run_query, execute_query, fetch_dropdown
