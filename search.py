@@ -139,9 +139,10 @@ def search_page():
         
         if conditions:
             where_clause = " AND ".join(conditions)
+            # Minor update: include the common name from Nursery_Tree_Inventory
             query = f"""
             SELECT nti.quantity_in_stock, nti.price, nti.min_height, nti.max_height,
-                   t.growth_rate, t.scientific_name, t.shape, t.watering_demand, 
+                   t.growth_rate, nti.tree_common_name as common_name, t.shape, t.watering_demand, 
                    t.main_photo_url, t.origin, t.soil_type, t.root_type, t.leafl_type, 
                    n.address
             FROM Nursery_Tree_Inventory nti
@@ -157,7 +158,7 @@ def search_page():
                         <div class="result-header">
                             <img src="{row['main_photo_url']}" alt="Tree Photo">
                             <div>
-                                <h3>{row['scientific_name']}</h3>
+                                <h3>{row['common_name']}</h3>
                                 <p>Growth Rate: {row['growth_rate']} cm/yr</p>
                             </div>
                         </div>
