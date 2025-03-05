@@ -1,4 +1,3 @@
-> Hawkar.Course:
 import streamlit as st
 import pandas as pd
 from handle import run_query, execute_query, fetch_dropdown
@@ -107,7 +106,6 @@ def nurseries_page():
             df = pd.DataFrame(data)
             st.dataframe(df)
 
-> Hawkar.Course:
 # Nursery ID is assumed to be the unique key
             selected_id = st.selectbox("Select Nursery ID to Modify/Delete", df["nursery_id"])
             action_choice = st.radio("Action", ["Modify", "Delete"])
