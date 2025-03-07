@@ -7,8 +7,8 @@ def data_entry_page():
     st.title("Data Entry")
     table_option = st.selectbox("Select Table", ["Nurseries", "Trees", "Nursery_Tree_Inventory", "Payments"])
     if table_option == "Payments":
-    import payment
-    payment.handle_payments("Modify/Delete")
+import payment
+    payment.handle_payments("Modify/Delete"))
 
     tab1, tab2, tab3 = st.tabs(["Single Entry", "Bulk Entry", "Modify/Delete"])
 
